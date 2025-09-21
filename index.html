@@ -8,7 +8,407 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Chosen Palette: Warm Neutrals with Subtle Accents -->
-…            sections.forEach(section => observer.observe(section));
+    <!-- Application Structure Plan: The application is structured as a linear, scrollable journey mirroring the provided roadmap's progression from foundational knowledge to specialized skills and career development. I chose this single-page, multi-section layout for its simplicity and intuitiveness, allowing users to easily track their progress. Key interactions include: 1) A sticky navigation bar for quick jumps between sections. 2) A dynamic donut chart visualizing the user's self-reported progress. 3) Collapsible content sections for each topic, revealing curated learning resources (articles, videos, courses) without overwhelming the user. This structure breaks down a complex learning path into a manageable, step-by-step guide, which is ideal for self-paced learning. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: Overall learning progress. Goal: Motivate and inform the user of their journey. Viz/Presentation Method: Donut Chart (Chart.js). Interaction: Users can click "+"/"-" buttons to update their perceived completion percentage, which dynamically updates the chart. Justification: A donut chart provides a clear, immediate visual representation of progress, which is highly motivating. Library/Method: Chart.js on a Canvas element.
+        - Report Info: The roadmap's hierarchical topics. Goal: Organize and present a large amount of information clearly. Viz/Presentation Method: Interactive collapsible cards (HTML/CSS/JS). Interaction: Users click on a topic card to expand it and view the detailed curriculum and resource links. Justification: This prevents information overload and allows users to focus on one topic at a time. Library/Method: Vanilla JavaScript for toggle functionality.
+        - Report Info: External learning resources. Goal: Provide direct access to learning materials. Viz/Presentation Method: Curated lists of hyperlinks with descriptive text. Interaction: Standard hyperlink clicks. Justification: Direct and universally understood method for accessing external content. Library/Method: Standard HTML `<a>` tags.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF8;
+            color: #1a1a1a;
+        }
+        .section-card {
+            background-color: #FFFFFF;
+            border: 1px solid #F0EAE1;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #D97706; /* Amber-600 */
+            border-bottom-color: #D97706;
+        }
+        .resource-link {
+            transition: color 0.3s ease;
+        }
+        .resource-link:hover {
+            color: #D97706;
+        }
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-out;
+        }
+        .topic-card.open .collapsible-content {
+            max-height: 1000px; /* Adjust as needed */
+        }
+        .progress-button {
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        .progress-button:hover {
+            transform: scale(1.05);
+        }
+        .sticky-nav {
+            position: -webkit-sticky;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Header Section -->
+    <header class="bg-white shadow-sm py-4 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">AI Generalist Roadmap</h1>
+                <p class="text-sm text-gray-500">Your interactive guide to becoming an AI expert, with curated free resources.</p>
+            </div>
+             <div class="text-sm text-gray-600">
+                <p>Created by your AI Trainer</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Sticky Navigation -->
+    <nav id="navbar" class="sticky-nav bg-white/80 backdrop-blur-md border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-center h-16 items-center space-x-4 md:space-x-8 overflow-x-auto">
+                <a href="#overview" class="nav-link px-3 py-2 text-sm font-medium text-gray-700 whitespace-nowrap">Overview</a>
+                <a href="#foundations" class="nav-link px-3 py-2 text-sm font-medium text-gray-700 whitespace-nowrap">Foundations</a>
+                <a href="#core-ai" class="nav-link px-3 py-2 text-sm font-medium text-gray-700 whitespace-nowrap">Core AI/ML</a>
+                <a href="#specialization" class="nav-link px-3 py-2 text-sm font-medium text-gray-700 whitespace-nowrap">Specialization</a>
+                <a href="#career" class="nav-link px-3 py-2 text-sm font-medium text-gray-700 whitespace-nowrap">Career Path</a>
+            </div>
+        </div>
+    </nav>
+
+
+    <main class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        
+        <!-- Overview & Progress Tracker -->
+        <section id="overview" class="mb-12">
+            <div class="section-card rounded-xl p-6 md:p-8">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+                    <div class="md:col-span-2">
+                        <h2 class="text-3xl font-bold text-gray-900 mb-3">Your Learning Journey</h2>
+                        <p class="text-gray-600 leading-relaxed">
+                            Welcome to your personalized AI Generalist curriculum. This roadmap is designed to guide you from the fundamental building blocks of programming and mathematics to advanced specializations in AI. Use this interactive dashboard to explore topics, access free, high-quality learning materials, and track your progress. An AI Generalist possesses a broad understanding of AI concepts and can apply them across various domains, making them incredibly valuable. Let's begin your journey to becoming one!
+                        </p>
+                    </div>
+                    <div class="flex flex-col items-center justify-center">
+                        <h3 class="text-lg font-semibold mb-2">Track Your Progress</h3>
+                        <div class="chart-container w-full max-w-xs mx-auto h-48 md:h-56">
+                            <canvas id="progressChart"></canvas>
+                        </div>
+                        <div class="flex items-center space-x-4 mt-4">
+                            <button id="decreaseProgress" class="progress-button bg-amber-200 text-amber-800 rounded-full w-10 h-10 flex items-center justify-center font-bold text-xl">-</button>
+                            <span id="progressText" class="font-bold text-2xl text-gray-800">0%</span>
+                            <button id="increaseProgress" class="progress-button bg-amber-500 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-xl">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Content Sections -->
+        <div id="content-sections">
+            
+            <!-- Section 1: Foundations -->
+            <section id="foundations" class="mb-12">
+                <h2 class="text-3xl font-bold mb-6 border-l-4 border-amber-500 pl-4">I. The Foundations</h2>
+                 <p class="text-gray-600 mb-6 leading-relaxed">
+                    This first section covers the absolute essentials. A strong foundation in programming, mathematics, and data handling is non-negotiable for a successful career in AI. These skills are the bedrock upon which all other advanced topics are built. We will focus on Python, the primary language for AI, and the core mathematical concepts that govern machine learning algorithms.
+                </p>
+                <div class="space-y-4">
+                    <!-- Topic cards will be dynamically inserted here -->
+                </div>
+            </section>
+
+            <!-- Section 2: Core AI/ML -->
+            <section id="core-ai" class="mb-12">
+                <h2 class="text-3xl font-bold mb-6 border-l-4 border-amber-500 pl-4">II. Core AI & Machine Learning</h2>
+                 <p class="text-600 mb-6 leading-relaxed">
+                   Now we dive into the heart of Artificial Intelligence. This section introduces you to the fundamental concepts and techniques of Machine Learning and Deep Learning. You'll learn how to build, train, and evaluate models that can learn from data to make predictions or decisions. We will explore everything from basic regression models to complex neural networks.
+                </p>
+                <div class="space-y-4">
+                    <!-- Topic cards will be dynamically inserted here -->
+                </div>
+            </section>
+            
+            <!-- Section 3: Specialization -->
+            <section id="specialization" class="mb-12">
+                <h2 class="text-3xl font-bold mb-6 border-l-4 border-amber-500 pl-4">III. Specialization Tracks</h2>
+                 <p class="text-gray-600 mb-6 leading-relaxed">
+                   After mastering the core concepts, you can choose to specialize. AI is a vast field, and focusing on a specific area can significantly boost your expertise and career prospects. This section outlines popular tracks like Natural Language Processing (NLP), Computer Vision, and more. Explore these to find what excites you the most.
+                </p>
+                <div class="space-y-4">
+                    <!-- Topic cards will be dynamically inserted here -->
+                </div>
+            </section>
+
+            <!-- Section 4: Career Path -->
+            <section id="career" class="mb-12">
+                <h2 class="text-3xl font-bold mb-6 border-l-4 border-amber-500 pl-4">IV. Career Development</h2>
+                 <p class="text-gray-600 mb-6 leading-relaxed">
+                    Knowledge is powerful, but applying it is key. This final section focuses on translating your skills into a successful career. We'll cover building a strong portfolio with practical projects, understanding the tools of the trade for deploying models (MLOps), and preparing for interviews to land your dream job in AI.
+                </p>
+                <div class="space-y-4">
+                    <!-- Topic cards will be dynamically inserted here -->
+                </div>
+            </section>
+
+        </div>
+    </main>
+    
+    <footer class="bg-white mt-12 border-t">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 text-center text-gray-500">
+            <p>&copy; 2025 AI Generalist Roadmap. All resources are for educational purposes.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const roadmapData = {
+                foundations: [
+                    {
+                        title: "Programming with Python",
+                        description: "Learn the fundamentals of Python, the most popular language for AI and Machine Learning.",
+                        resources: [
+                            { name: "Python for Everybody (Book & Course)", url: "https://www.py4e.com/", type: "Course" },
+                            { name: "Official Python Tutorial", url: "https://docs.python.org/3/tutorial/", type: "Docs" },
+                            { name: "freeCodeCamp - Python for Beginners", url: "https://www.youtube.com/watch?v=rfscVS0vtbw", type: "Video" },
+                        ]
+                    },
+                    {
+                        title: "Data Structures & Algorithms",
+                        description: "Understand how to organize and manipulate data efficiently, a critical skill for building optimized AI models.",
+                        resources: [
+                            { name: "GeeksforGeeks - Data Structures", url: "https://www.geeksforgeeks.org/data-structures/", type: "Article" },
+                            { name: "freeCodeCamp - Algorithms and Data Structures", url: "https://www.freecodecamp.org/learn/javascript-algorithms-and-data-structures/", type: "Course" },
+                        ]
+                    },
+                    {
+                        title: "Mathematics for AI",
+                        description: "Grasp the core concepts of Linear Algebra, Calculus, Probability, and Statistics that power machine learning.",
+                        resources: [
+                            { name: "Khan Academy - Linear Algebra", url: "https://www.khanacademy.org/math/linear-algebra", type: "Course" },
+                            { name: "Khan Academy - Statistics & Probability", url: "https://www.khanacademy.org/math/statistics-probability", type: "Course" },
+                            { name: "3Blue1Brown - Essence of Calculus", url: "https://www.youtube.com/playlist?list=PLZHQObOWTQDMsr9K-rj53DwVRMYO3t5Yr", type: "Video" },
+                        ]
+                    },
+                     {
+                        title: "Data Manipulation & Analysis",
+                        description: "Learn to use essential libraries like NumPy, Pandas, and Matplotlib to process, analyze, and visualize data.",
+                        resources: [
+                            { name: "Pandas Official 'Getting Started' Guide", url: "https://pandas.pydata.org/docs/getting_started/index.html", type: "Docs" },
+                            { name: "NumPy: The Absolute Basics for Beginners", url: "https://numpy.org/doc/stable/user/absolute_beginners.html", type: "Docs" },
+                            { name: "freeCodeCamp - Data Analysis with Python", url: "https://www.youtube.com/watch?v=r-uOLxNrNk8", type: "Video" },
+                        ]
+                    }
+                ],
+                'core-ai': [
+                    {
+                        title: "Machine Learning Fundamentals",
+                        description: "Explore the foundational concepts of ML, including supervised, unsupervised, and reinforcement learning.",
+                        resources: [
+                            { name: "Machine Learning by Andrew Ng (Coursera)", url: "https://www.coursera.org/learn/machine-learning", type: "Course" },
+                            { name: "Google's Machine Learning Crash Course", url: "https://developers.google.com/machine-learning/crash-course", type: "Course" },
+                        ]
+                    },
+                    {
+                        title: "Deep Learning & Neural Networks",
+                        description: "Dive into the architecture of neural networks and learn how deep learning solves complex problems.",
+                        resources: [
+                            { name: "Deep Learning Specialization by Andrew Ng", url: "https://www.coursera.org/specializations/deep-learning", type: "Course" },
+                            { name: "3Blue1Brown - Neural Networks", url: "https://www.youtube.com/playlist?list=PLZHQObOWTQDNU6R1_67000Dx_ZCJB-3pi", type: "Video" },
+                        ]
+                    },
+                    {
+                        title: "ML Frameworks: Scikit-learn & TensorFlow/PyTorch",
+                        description: "Get hands-on experience with popular frameworks for building and training machine learning models.",
+                        resources: [
+                            { name: "Scikit-learn User Guide", url: "https://scikit-learn.org/stable/user_guide.html", type: "Docs" },
+                            { name: "Introduction to PyTorch (Official)", url: "https://pytorch.org/tutorials/beginner/deep_learning_60min_blitz.html", type: "Tutorial" },
+                             { name: "TensorFlow 2.0 Complete Course by freeCodeCamp", url: "https://www.youtube.com/watch?v=qFJeN9V1ZsI", type: "Video" },
+                        ]
+                    }
+                ],
+                specialization: [
+                    {
+                        title: "Natural Language Processing (NLP)",
+                        description: "Teach computers to understand, process, and generate human language.",
+                        resources: [
+                            { name: "Stanford CS224N: NLP with Deep Learning", url: "https://www.youtube.com/playlist?list=PLoROMvodv4rOSH4v6133s9LFPRHjEmbmJ", type: "Course" },
+                            { name: "Hugging Face NLP Course", url: "https://huggingface.co/course/chapter1/1", type: "Course" },
+                        ]
+                    },
+                    {
+                        title: "Computer Vision",
+                        description: "Enable machines to interpret and understand the visual world from images and videos.",
+                        resources: [
+                            { name: "CS231n: Convolutional Neural Networks for Visual Recognition", url: "http://cs231n.stanford.edu/", type: "Course" },
+                            { name: "freeCodeCamp - Computer Vision with Python", url: "https://www.youtube.com/watch?v=01sAkU_Nv_o", type: "Video" },
+                        ]
+                    },
+                     {
+                        title: "Generative AI & LLMs",
+                        description: "Explore cutting-edge models that can generate new text, images, and other media.",
+                        resources: [
+                             { name: "Google Cloud Skills - Introduction to Generative AI", url: "https://www.cloudskillsboost.google/paths/118", type: "Course" },
+                             { name: "LinkedIn Learning - What are Generative AI Models?", url: "https://www.linkedin.com/learning/what-are-generative-ai-models/generative-ai-foundations", type: "Video"},
+                        ]
+                    },
+                ],
+                 career: [
+                     {
+                        title: "Building a Portfolio",
+                        description: "Showcase your skills by building and documenting real-world AI projects.",
+                        resources: [
+                             { name: "Outscal - Building Your Data Science Portfolio", url: "https://www.youtube.com/watch?v=vL3m9g3ea_M", type: "Video" },
+                             { name: "Kaggle: Your Home for Data Science", url: "https://www.kaggle.com/", type: "Platform" },
+                        ]
+                    },
+                    {
+                        title: "MLOps (Machine Learning Operations)",
+                        description: "Learn the principles and tools for deploying, monitoring, and maintaining ML models in production.",
+                        resources: [
+                             { name: "MLOps Explained by AWS", url: "https://aws.amazon.com/machine-learning/mlops/", type: "Article" },
+                             { name: "LinkedIn Learning - MLOps Principles", url: "https://www.linkedin.com/learning/mlops-principles/the-mlops-lifecycle", type: "Video" },
+                        ]
+                    },
+                     {
+                        title: "Interview Preparation",
+                        description: "Prepare for technical and behavioral interviews for AI and Machine Learning roles.",
+                        resources: [
+                             { name: "Top 50 AI Interview Questions - GeeksForGeeks", url: "https://www.geeksforgeeks.org/top-50-artificial-intelligence-ai-interview-questions-answers/", type: "Article" },
+                             { name: "Outscal - How to Crack Any Data Science Interview", url: "https://www.youtube.com/watch?v=UeAbIyVlRzE", type: "Video" },
+                        ]
+                    },
+                 ]
+            };
+            
+            const createTopicCard = (topic) => {
+                 const resourcesHTML = topic.resources.map(res => `
+                    <li class="flex items-center space-x-3">
+                        <span class="inline-block bg-amber-100 text-amber-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">${res.type}</span>
+                        <a href="${res.url}" target="_blank" rel="noopener noreferrer" class="text-gray-800 resource-link">${res.name}</a>
+                    </li>
+                `).join('');
+
+                return `
+                    <div class="topic-card section-card rounded-lg overflow-hidden">
+                        <div class="topic-header p-4 md:p-5 cursor-pointer flex justify-between items-center">
+                            <div>
+                                <h3 class="font-semibold text-lg text-gray-800">${topic.title}</h3>
+                                <p class="text-sm text-gray-500">${topic.description}</p>
+                            </div>
+                            <span class="transform transition-transform duration-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                            </span>
+                        </div>
+                        <div class="collapsible-content">
+                            <div class="p-4 md:p-5 border-t border-gray-200">
+                                <h4 class="font-semibold text-md mb-3 text-gray-700">Recommended Resources:</h4>
+                                <ul class="space-y-2">
+                                    ${resourcesHTML}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            };
+
+            const contentSections = document.getElementById('content-sections');
+            Object.keys(roadmapData).forEach(sectionId => {
+                const section = contentSections.querySelector(`#${sectionId} > div`);
+                if(section) {
+                    const cards = roadmapData[sectionId].map(createTopicCard).join('');
+                    section.innerHTML = cards;
+                }
+            });
+
+            // Collapsible card logic
+            document.querySelectorAll('.topic-header').forEach(header => {
+                header.addEventListener('click', () => {
+                    const card = header.closest('.topic-card');
+                    card.classList.toggle('open');
+                    const icon = header.querySelector('span');
+                    icon.classList.toggle('rotate-180');
+                });
+            });
+
+
+            // Progress Chart
+            const ctx = document.getElementById('progressChart').getContext('2d');
+            let progress = 0;
+
+            const progressChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Completed', 'Remaining'],
+                    datasets: [{
+                        data: [0, 100],
+                        backgroundColor: ['#F59E0B', '#FDE68A'],
+                        borderColor: ['#FFFFFF'],
+                        borderWidth: 4,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            enabled: false
+                        }
+                    }
+                }
+            });
+
+            const progressText = document.getElementById('progressText');
+
+            function updateProgress(newProgress) {
+                progress = Math.max(0, Math.min(100, newProgress));
+                progressChart.data.datasets[0].data[0] = progress;
+                progressChart.data.datasets[0].data[1] = 100 - progress;
+                progressChart.update();
+                progressText.textContent = `${progress}%`;
+            }
+
+            document.getElementById('increaseProgress').addEventListener('click', () => updateProgress(progress + 5));
+            document.getElementById('decreaseProgress').addEventListener('click', () => updateProgress(progress - 5));
+
+            // Sticky nav active state
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('main section[id]');
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        navLinks.forEach(link => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href').substring(1) === entry.target.id) {
+                                link.classList.add('active');
+                            }
+                        });
+                    }
+                });
+            }, { rootMargin: '-50% 0px -50% 0px' });
+
+            sections.forEach(section => observer.observe(section));
 
         });
     </script>
